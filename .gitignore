@@ -1,0 +1,26 @@
+# Python
+__pycache__/
+*.py[cod]
+*.egg-info/
+.venv/
+.env
+
+# Tests
+.pytest_cache/
+
+# macOS
+.DS_Store
+
+# Xcode / Swift
+DerivedData/
+*.xcuserstate
+*.xcuserdata/
+*.xcworkspace
+*.xcodeproj/project.xcworkspace/
+
+# Swift Package Manager
+.build/
+
+# IDEs
+.vscode/
+.idea/
