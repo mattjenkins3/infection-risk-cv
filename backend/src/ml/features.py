@@ -36,6 +36,7 @@ class FeatureExtractor:
             image_bgr: Image as a BGR uint8 numpy array.
         """
         wound_mask = self._segment_wound(image_bgr)
+        image_bgr, wound_mask = self._crop_to_wound(image_bgr, wound_mask)
         periwound_mask = self._periwound_ring(wound_mask, ring_width=18)
 
         redness = self._periwound_redness(image_bgr, periwound_mask)
@@ -65,6 +66,30 @@ class FeatureExtractor:
 
         wound_mask = cv2.morphologyEx(wound_mask, cv2.MORPH_CLOSE, np.ones((5, 5), np.uint8))
         return wound_mask
+
+    def _crop_to_wound(
+        self, image_bgr: np.ndarray, wound_mask: np.ndarray, padding_ratio: float = 0.12
+    ) -> tuple[np.ndarray, np.ndarray]:
+        """Crop the image to the wound bounding box with padding."""
+        contours, _ = cv2.findContours(wound_mask, cv2.RETR_EXTERNAL, cv2.CHAIN_APPROX_SIMPLE)
+        if not contours:
+            return image_bgr, wound_mask
+
+        largest = max(contours, key=cv2.contourArea)
+        x, y, w, h = cv2.boundingRect(largest)
+        if w == 0 or h == 0:
+            return image_bgr, wound_mask
+
+        pad = int(max(w, h) * padding_ratio)
+        height, width = image_bgr.shape[:2]
+        x0 = max(x - pad, 0)
+        y0 = max(y - pad, 0)
+        x1 = min(x + w + pad, width)
+        y1 = min(y + h + pad, height)
+
+        cropped_image = image_bgr[y0:y1, x0:x1].copy()
+        cropped_mask = wound_mask[y0:y1, x0:x1].copy()
+        return cropped_image, cropped_mask
 
     def _fallback_otsu(self, image_bgr: np.ndarray) -> np.ndarray:
         gray = cv2.cvtColor(image_bgr, cv2.COLOR_BGR2GRAY)

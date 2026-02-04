@@ -8,6 +8,11 @@ final class AssessViewModel: ObservableObject {
     @Published var isLoading = false
     @Published var errorMessage: String?
     @Published var showDisclaimer = false
+    @Published var reportedPain = false
+    @Published var reportedWarmth = false
+    @Published var reportedSwelling = false
+    @Published var reportedDrainage = false
+    @Published var reportedSpreadingRedness = false
 
     @Published var backendURL: String {
         didSet {
@@ -37,7 +42,18 @@ final class AssessViewModel: ObservableObject {
         }
 
         do {
-            riskResponse = try await apiService.assess(image: image, backendURL: backendURL)
+            let symptoms = SymptomInputs(
+                reportedPain: reportedPain,
+                reportedWarmth: reportedWarmth,
+                reportedSwelling: reportedSwelling,
+                reportedDrainage: reportedDrainage,
+                reportedSpreadingRedness: reportedSpreadingRedness
+            )
+            riskResponse = try await apiService.assess(
+                image: image,
+                backendURL: backendURL,
+                symptoms: symptoms
+            )
         } catch {
             errorMessage = "Backend unavailable. Showing local-only demo estimate."
             riskResponse = localDemoAssessment(image: image)
@@ -64,13 +80,37 @@ final class AssessViewModel: ObservableObject {
 
     private func localDemoAssessment(image: UIImage) -> RiskResponse {
         let score = demoScore(image: image)
-        let level = score >= 0.66 ? "high" : (score >= 0.33 ? "medium" : "low")
-        let signal = Signal(name: "local_demo", value: score, weight: 1.0, note: "Local-only heuristic signal.")
+        let symptomWeights: [String: Double] = [
+            "reported_pain": 0.06,
+            "reported_warmth": 0.08,
+            "reported_swelling": 0.06,
+            "reported_drainage": 0.12,
+            "reported_spreading_redness": 0.1
+        ]
+        let symptomInputs = currentSymptoms()
+        var adjustedScore = score
+        var signals = [Signal(name: "local_demo", value: score, weight: 1.0, note: "Local-only heuristic signal.")]
+
+        for (key, value) in symptomInputs {
+            let weight = symptomWeights[key, default: 0.0]
+            adjustedScore += weight * (value ? 1.0 : 0.0)
+            signals.append(
+                Signal(
+                    name: key,
+                    value: value ? 1.0 : 0.0,
+                    weight: weight,
+                    note: "User-reported symptom."
+                )
+            )
+        }
+
+        adjustedScore = min(max(adjustedScore, 0.0), 1.0)
+        let level = adjustedScore >= 0.66 ? "high" : (adjustedScore >= 0.33 ? "medium" : "low")
 
         return RiskResponse(
-            riskScore: score,
+            riskScore: adjustedScore,
             riskLevel: level,
-            signals: [signal],
+            signals: signals,
             explanation: "Local-only demo estimate based on average color intensity. Not diagnostic.",
             disclaimer: "This output is a non-diagnostic risk estimation for triage support only.",
             recommendedNextSteps: [
@@ -110,5 +150,15 @@ final class AssessViewModel: ObservableObject {
 
         let avgRed = redSum / Double(width * height) / 255.0
         return min(max(avgRed, 0.0), 1.0)
+    }
+
+    private func currentSymptoms() -> [String: Bool] {
+        [
+            "reported_pain": reportedPain,
+            "reported_warmth": reportedWarmth,
+            "reported_swelling": reportedSwelling,
+            "reported_drainage": reportedDrainage,
+            "reported_spreading_redness": reportedSpreadingRedness
+        ]
     }
 }
