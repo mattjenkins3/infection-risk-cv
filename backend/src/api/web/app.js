@@ -26,7 +26,24 @@ const limitationsClose = document.getElementById("limitations-close");
 let selectedFile = null;
 
 const STORAGE_KEY = "backendURL";
-backendUrlInput.value = localStorage.getItem(STORAGE_KEY) || "";
+const storage = {
+  get(key) {
+    try {
+      return localStorage.getItem(key);
+    } catch (error) {
+      return "";
+    }
+  },
+  set(key, value) {
+    try {
+      localStorage.setItem(key, value);
+    } catch (error) {
+      // Ignore storage errors in restricted environments.
+    }
+  },
+};
+
+backendUrlInput.value = storage.get(STORAGE_KEY) || "";
 
 function setStatus(message, isError = false) {
   statusEl.textContent = message;
@@ -87,12 +104,12 @@ limitationsModal.addEventListener("click", (event) => {
 });
 
 backendUrlInput.addEventListener("input", () => {
-  localStorage.setItem(STORAGE_KEY, backendUrlInput.value.trim());
+  storage.set(STORAGE_KEY, backendUrlInput.value.trim());
 });
 
 useCurrentButton.addEventListener("click", () => {
   backendUrlInput.value = window.location.origin;
-  localStorage.setItem(STORAGE_KEY, backendUrlInput.value);
+  storage.set(STORAGE_KEY, backendUrlInput.value);
 });
 
 async function testConnection() {
