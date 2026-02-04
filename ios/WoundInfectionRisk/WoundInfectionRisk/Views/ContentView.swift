@@ -15,6 +15,8 @@ struct ContentView: View {
 
                     imageSection
 
+                    questionnaireSection
+
                     Button(action: {
                         Task { await viewModel.assessRisk() }
                     }) {
@@ -108,6 +110,21 @@ struct ContentView: View {
                     .buttonStyle(.bordered)
             }
         }
+    }
+
+    private var questionnaireSection: some View {
+        VStack(alignment: .leading, spacing: 12) {
+            Text("Quick questions (optional)")
+                .font(.headline)
+            Toggle("Is the wound painful to the touch?", isOn: $viewModel.reportedPain)
+            Toggle("Is there a warm/hot feeling around the wound?", isOn: $viewModel.reportedWarmth)
+            Toggle("Is there swelling around the wound?", isOn: $viewModel.reportedSwelling)
+            Toggle("Is there drainage or pus?", isOn: $viewModel.reportedDrainage)
+            Toggle("Is redness spreading beyond the wound edges?", isOn: $viewModel.reportedSpreadingRedness)
+        }
+        .padding()
+        .background(Color.gray.opacity(0.1))
+        .cornerRadius(12)
     }
 }
 

@@ -8,13 +8,14 @@ from typing import List
 
 import cv2
 import numpy as np
-from fastapi import FastAPI, File, HTTPException, UploadFile
+from fastapi import FastAPI, File, Form, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import FileResponse, JSONResponse
 from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
 from src.ml.registry import load_model
+from src.ml.scoring import SymptomInputs
 from src.utils.network import get_lan_ip
 
 LOGGER = logging.getLogger("wound-risk")
@@ -70,7 +71,14 @@ async def index() -> FileResponse:
 
 
 @app.post("/assess", response_model=AssessResponse)
-async def assess(file: UploadFile = File(...)) -> JSONResponse:
+async def assess(
+    file: UploadFile = File(...),
+    reported_pain: bool = Form(False),
+    reported_warmth: bool = Form(False),
+    reported_swelling: bool = Form(False),
+    reported_drainage: bool = Form(False),
+    reported_spreading_redness: bool = Form(False),
+) -> JSONResponse:
     if file.content_type not in ALLOWED_MIME_TYPES:
         raise HTTPException(status_code=400, detail="Unsupported file type. Please upload a JPG or PNG image.")
 
@@ -86,7 +94,14 @@ async def assess(file: UploadFile = File(...)) -> JSONResponse:
         model_name="heuristic",
         weights_path=Path(__file__).resolve().parents[2] / "config" / "weights.yaml",
     )
-    result = model.predict(image)
+    symptoms = SymptomInputs(
+        reported_pain=reported_pain,
+        reported_warmth=reported_warmth,
+        reported_swelling=reported_swelling,
+        reported_drainage=reported_drainage,
+        reported_spreading_redness=reported_spreading_redness,
+    )
+    result = model.predict(image, symptoms=symptoms)
     response = AssessResponse(
         risk_score=result.risk_score,
         risk_level=result.risk_level,

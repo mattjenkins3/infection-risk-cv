@@ -9,8 +9,16 @@ enum APIServiceError: Error {
     case encodingError
 }
 
+struct SymptomInputs {
+    let reportedPain: Bool
+    let reportedWarmth: Bool
+    let reportedSwelling: Bool
+    let reportedDrainage: Bool
+    let reportedSpreadingRedness: Bool
+}
+
 struct APIService {
-    func assess(image: UIImage, backendURL: String) async throws -> RiskResponse {
+    func assess(image: UIImage, backendURL: String, symptoms: SymptomInputs) async throws -> RiskResponse {
         guard let url = URL(string: backendURL + "/assess") else {
             throw APIServiceError.invalidURL
         }
@@ -29,7 +37,24 @@ struct APIService {
         body.append("Content-Disposition: form-data; name=\"file\"; filename=\"image.jpg\"\r\n".data(using: .utf8)!)
         body.append("Content-Type: image/jpeg\r\n\r\n".data(using: .utf8)!)
         body.append(imageData)
-        body.append("\r\n--\(boundary)--\r\n".data(using: .utf8)!)
+        body.append("\r\n".data(using: .utf8)!)
+
+        let fields: [String: Bool] = [
+            "reported_pain": symptoms.reportedPain,
+            "reported_warmth": symptoms.reportedWarmth,
+            "reported_swelling": symptoms.reportedSwelling,
+            "reported_drainage": symptoms.reportedDrainage,
+            "reported_spreading_redness": symptoms.reportedSpreadingRedness
+        ]
+
+        for (key, value) in fields {
+            body.append("--\(boundary)\r\n".data(using: .utf8)!)
+            body.append("Content-Disposition: form-data; name=\"\(key)\"\r\n\r\n".data(using: .utf8)!)
+            body.append("\(value)".data(using: .utf8)!)
+            body.append("\r\n".data(using: .utf8)!)
+        }
+
+        body.append("--\(boundary)--\r\n".data(using: .utf8)!)
 
         request.httpBody = body
 

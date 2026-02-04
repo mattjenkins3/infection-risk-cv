@@ -2,4 +2,9 @@ periwound_redness: 0.35
 exudate_proxy: 0.25
 dark_tissue_proxy: 0.25
 swelling_proxy: 0.15
+reported_pain: 0.06
+reported_warmth: 0.08
+reported_swelling: 0.06
+reported_drainage: 0.12
+reported_spreading_redness: 0.1
 bias: 0.05

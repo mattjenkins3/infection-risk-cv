@@ -8,13 +8,13 @@ from typing import Protocol
 import numpy as np
 
 from .features import FeatureExtractor
-from .scoring import RiskResult, RiskScorer
+from .scoring import RiskResult, RiskScorer, SymptomInputs
 
 
 class RiskModel(Protocol):
     """Protocol for risk models."""
 
-    def predict(self, image_bgr: np.ndarray) -> RiskResult:
+    def predict(self, image_bgr: np.ndarray, symptoms: SymptomInputs | None = None) -> RiskResult:
         ...
 
 
@@ -28,9 +28,9 @@ class HeuristicRiskModel:
         self.extractor = FeatureExtractor()
         self.scorer = RiskScorer(self.weights_path)
 
-    def predict(self, image_bgr: np.ndarray) -> RiskResult:
+    def predict(self, image_bgr: np.ndarray, symptoms: SymptomInputs | None = None) -> RiskResult:
         signals = self.extractor.extract(image_bgr)
-        return self.scorer.score(signals)
+        return self.scorer.score(signals, symptoms=symptoms)
 
 
 @dataclass
@@ -39,7 +39,7 @@ class TorchModelStub:
 
     model_path: Path
 
-    def predict(self, image_bgr: np.ndarray) -> RiskResult:
+    def predict(self, image_bgr: np.ndarray, symptoms: SymptomInputs | None = None) -> RiskResult:
         raise NotImplementedError(
             "TODO: Load and run a trained PyTorch model, then map outputs to RiskResult."
         )

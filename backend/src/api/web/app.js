@@ -10,6 +10,11 @@ const riskExplanation = document.getElementById("risk-explanation");
 const signalsList = document.getElementById("signals-list");
 const stepsList = document.getElementById("steps-list");
 const resultDisclaimer = document.getElementById("result-disclaimer");
+const reportedPain = document.getElementById("reported-pain");
+const reportedWarmth = document.getElementById("reported-warmth");
+const reportedSwelling = document.getElementById("reported-swelling");
+const reportedDrainage = document.getElementById("reported-drainage");
+const reportedSpreadingRedness = document.getElementById("reported-spreading-redness");
 
 const settingsModal = document.getElementById("settings-modal");
 const settingsButton = document.getElementById("settings-button");
@@ -161,20 +166,41 @@ function showResult(result) {
   resultDisclaimer.textContent = result.disclaimer;
 }
 
-function localDemoAssessment(imageData) {
-  const score = imageData.avgRed;
+function localDemoAssessment(imageData, questionnaire) {
+  const weights = {
+    reported_pain: 0.06,
+    reported_warmth: 0.08,
+    reported_swelling: 0.06,
+    reported_drainage: 0.12,
+    reported_spreading_redness: 0.1,
+  };
+  let score = imageData.avgRed;
+  const signals = [
+    {
+      name: "local_demo",
+      value: score,
+      weight: 1.0,
+      note: "Local-only heuristic signal.",
+    },
+  ];
+
+  Object.entries(questionnaire).forEach(([key, value]) => {
+    const weight = weights[key] ?? 0.0;
+    score += weight * (value ? 1 : 0);
+    signals.push({
+      name: key,
+      value: value ? 1.0 : 0.0,
+      weight,
+      note: "User-reported symptom.",
+    });
+  });
+
+  score = Math.min(Math.max(score, 0), 1);
   const level = score >= 0.66 ? "high" : score >= 0.33 ? "medium" : "low";
   return {
     risk_score: score,
     risk_level: level,
-    signals: [
-      {
-        name: "local_demo",
-        value: score,
-        weight: 1.0,
-        note: "Local-only heuristic signal.",
-      },
-    ],
+    signals,
     explanation:
       "Local-only demo estimate based on average color intensity. Not diagnostic.",
     disclaimer: "This output is a non-diagnostic risk estimation for triage support only.",
@@ -205,6 +231,23 @@ async function computeAverageRed(file) {
   return { avgRed: Math.min(Math.max(avgRed, 0), 1) };
 }
 
+function buildQuestionnairePayload() {
+  return {
+    reported_pain: reportedPain.checked,
+    reported_warmth: reportedWarmth.checked,
+    reported_swelling: reportedSwelling.checked,
+    reported_drainage: reportedDrainage.checked,
+    reported_spreading_redness: reportedSpreadingRedness.checked,
+  };
+}
+
+function appendQuestionnaire(formData) {
+  const questionnaire = buildQuestionnairePayload();
+  Object.entries(questionnaire).forEach(([key, value]) => {
+    formData.append(key, value ? "true" : "false");
+  });
+}
+
 async function assessRisk() {
   if (!selectedFile) {
     setStatus("Please select an image first.", true);
@@ -217,7 +260,8 @@ async function assessRisk() {
   const backendUrl = backendUrlInput.value.trim();
   if (!backendUrl) {
     const imageData = await computeAverageRed(selectedFile);
-    const result = localDemoAssessment(imageData);
+    const questionnaire = buildQuestionnairePayload();
+    const result = localDemoAssessment(imageData, questionnaire);
     setStatus("Local-only demo estimate.");
     showResult(result);
     return;
@@ -225,6 +269,7 @@ async function assessRisk() {
 
   const formData = new FormData();
   formData.append("file", selectedFile);
+  appendQuestionnaire(formData);
 
   try {
     const response = await fetch(`${backendUrl}/assess`, {
@@ -239,7 +284,8 @@ async function assessRisk() {
     showResult(result);
   } catch (error) {
     const imageData = await computeAverageRed(selectedFile);
-    const result = localDemoAssessment(imageData);
+    const questionnaire = buildQuestionnairePayload();
+    const result = localDemoAssessment(imageData, questionnaire);
     setStatus("Backend unavailable. Showing local-only demo estimate.", true);
     showResult(result);
   }
