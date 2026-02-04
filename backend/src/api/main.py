@@ -10,7 +10,8 @@ import cv2
 import numpy as np
 from fastapi import FastAPI, File, HTTPException, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
+from fastapi.responses import FileResponse, JSONResponse
+from fastapi.staticfiles import StaticFiles
 from pydantic import BaseModel
 
 from src.ml.registry import load_model
@@ -22,6 +23,7 @@ MAX_FILE_BYTES = 5 * 1024 * 1024
 ALLOWED_MIME_TYPES = {"image/jpeg", "image/png", "image/heic", "image/heif"}
 
 app = FastAPI(title="Wound Infection Risk API", version="0.1.0")
+WEB_DIR = Path(__file__).resolve().parent / "web"
 
 app.add_middleware(
     CORSMiddleware,
@@ -30,6 +32,8 @@ app.add_middleware(
     allow_methods=["*"] ,
     allow_headers=["*"],
 )
+
+app.mount("/static", StaticFiles(directory=WEB_DIR), name="static")
 
 
 class Signal(BaseModel):
@@ -58,6 +62,11 @@ async def startup_event() -> None:
 @app.get("/health")
 async def health() -> dict:
     return {"status": "ok"}
+
+
+@app.get("/")
+async def index() -> FileResponse:
+    return FileResponse(WEB_DIR / "index.html")
 
 
 @app.post("/assess", response_model=AssessResponse)
