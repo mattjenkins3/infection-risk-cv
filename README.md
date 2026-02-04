@@ -39,6 +39,13 @@ The features are combined with configurable weights in `backend/config/weights.y
 
 ## API
 
+## Web app
+The FastAPI backend also serves a lightweight web UI that mirrors the iOS experience, including settings, image upload, and results visualization. Start the backend and open:
+
+```
+http://localhost:8000
+```
+
 ### `GET /health`
 Returns a simple status JSON.
 

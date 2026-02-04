@@ -1,0 +1,122 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Wound Risk</title>
+    <link rel="stylesheet" href="/static/styles.css" />
+  </head>
+  <body>
+    <div class="app">
+      <header class="app-header">
+        <div>
+          <h1>Wound Risk</h1>
+          <p class="subtitle">Non-diagnostic risk estimation</p>
+        </div>
+        <button class="ghost" id="settings-button">Settings</button>
+      </header>
+
+      <section class="banner">
+        <div>
+          <h2>Non-diagnostic risk estimation</h2>
+          <p>
+            This app provides triage-support risk estimates only. It does not diagnose infection or provide
+            treatment instructions.
+          </p>
+        </div>
+        <button class="link" id="limitations-button">Learn more / Limitations</button>
+      </section>
+
+      <section class="card">
+        <div class="image-preview" id="image-preview">
+          <span>No image selected</span>
+        </div>
+        <div class="button-row">
+          <label class="button bordered">
+            Pick Photo
+            <input type="file" id="file-input" accept="image/*" />
+          </label>
+          <label class="button bordered">
+            Camera
+            <input type="file" id="camera-input" accept="image/*" capture="environment" />
+          </label>
+        </div>
+      </section>
+
+      <button class="button primary" id="assess-button">Assess Risk</button>
+
+      <div class="status" id="status"></div>
+
+      <section class="card" id="result-card" hidden>
+        <div class="result-header">
+          <span class="badge" id="risk-badge">Low</span>
+          <span class="score" id="risk-score">0.00</span>
+        </div>
+        <p id="risk-explanation"></p>
+
+        <div class="result-section">
+          <h3>Signals</h3>
+          <ul id="signals-list"></ul>
+        </div>
+
+        <div class="result-section">
+          <h3>Recommended next steps</h3>
+          <ul id="steps-list"></ul>
+        </div>
+
+        <p class="disclaimer" id="result-disclaimer"></p>
+      </section>
+    </div>
+
+    <div class="modal" id="settings-modal" hidden>
+      <div class="modal-content">
+        <header>
+          <h2>Settings</h2>
+          <button class="ghost" id="settings-close">Close</button>
+        </header>
+        <section>
+          <h3>Backend</h3>
+          <input
+            type="url"
+            id="backend-url"
+            placeholder="http://192.168.1.10:8000"
+            autocomplete="off"
+          />
+          <div class="button-row">
+            <button class="button bordered" id="test-connection">Test Connection</button>
+            <button class="button bordered" id="use-current">Use current backend</button>
+          </div>
+          <p class="status" id="connection-status"></p>
+          <p class="hint">Paste the LAN IP printed by the backend startup logs.</p>
+        </section>
+        <section>
+          <h3>Disclaimer</h3>
+          <p class="hint">
+            This app provides non-diagnostic risk estimation only and does not provide medical advice or treatment
+            instructions.
+          </p>
+        </section>
+      </div>
+    </div>
+
+    <div class="modal" id="limitations-modal" hidden>
+      <div class="modal-content">
+        <header>
+          <h2>Learn More</h2>
+          <button class="ghost" id="limitations-close">Close</button>
+        </header>
+        <section class="limitations">
+          <h3>Limitations</h3>
+          <ul>
+            <li>This tool provides non-diagnostic risk estimation only.</li>
+            <li>It does not determine if a wound is infected.</li>
+            <li>Lighting, camera quality, and skin tone can affect results.</li>
+            <li>Always consult a clinician for medical advice.</li>
+          </ul>
+        </section>
+      </div>
+    </div>
+
+    <script src="/static/app.js"></script>
+  </body>
+</html>
